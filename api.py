@@ -1,11 +1,13 @@
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
+from flask_socketio import SocketIO, emit
 from models import GameSession, db
 from datetime import datetime, timedelta
 import logging
 
 app = Flask(__name__)
 CORS(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -433,9 +435,84 @@ def static_files(filename):
     """提供静态文件"""
     return send_from_directory('static', filename)
 
+@socketio.on('connect')
+def handle_connect():
+    print('Client connected')
+    emit('status', {'message': 'Connected to server'})
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    print('Client disconnected')
+
+def broadcast_device_update(device_data):
+    """广播设备状态更新"""
+    socketio.emit('device_update', device_data)
+
+def broadcast_stats_update(stats_data):
+    """广播统计数据更新"""
+    socketio.emit('stats_update', stats_data)
+
+@app.route('/api/trigger-update', methods=['POST'])
+def trigger_update():
+    """触发前端实时更新"""
+    try:
+        # 获取最新的设备状态和统计数据
+        from datetime import datetime, timedelta
+        
+        # 获取设备状态
+        all_devices = GameSession.select(
+            GameSession.player_id,
+            GameSession.player_name
+        ).distinct()
+        
+        devices = []
+        for device in all_devices:
+            latest_session = GameSession.select().where(
+                GameSession.player_id == device.player_id
+            ).order_by(GameSession.start_time.desc()).first()
+            
+            status = "offline"
+            if latest_session:
+                if latest_session.end_time is None:
+                    status = "playing"
+                else:
+                    time_diff = datetime.now() - latest_session.end_time
+                    if time_diff.total_seconds() < 300:
+                        status = "online"
+            
+            devices.append({
+                'player_id': device.player_id,
+                'player_name': device.player_name,
+                'status': status
+            })
+        
+        # 广播设备状态更新
+        socketio.emit('device_update', {'devices': devices})
+        
+        # 获取今日统计
+        today = datetime.now().date()
+        today_sessions = GameSession.select().where(
+            GameSession.start_time >= today,
+            GameSession.duration_seconds.is_null(False)
+        )
+        
+        today_total_time = sum(session.duration_seconds for session in today_sessions)
+        today_session_count = today_sessions.count()
+        
+        # 广播统计更新
+        socketio.emit('stats_update', {
+            'total_time_seconds': today_total_time,
+            'session_count': today_session_count
+        })
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"触发更新失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 if __name__ == '__main__':
     # 初始化数据库
     from models import init_db
     init_db()
     
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    socketio.run(app, debug=True, host='0.0.0.0', port=5001)

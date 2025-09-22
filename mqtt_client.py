@@ -3,6 +3,7 @@ import paho.mqtt.client as mqtt
 from datetime import datetime
 from models import GameSession, db
 import logging
+import requests
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -100,6 +101,9 @@ class GameUsageTracker:
             )
             logger.info(f"玩家 {player_name} 开始游戏，会话ID: {session.id}")
             
+            # 触发实时更新
+            self.trigger_realtime_update()
+            
         except Exception as e:
             logger.error(f"处理游戏开始事件时出错: {e}")
     
@@ -117,6 +121,9 @@ class GameUsageTracker:
                 logger.info(f"玩家 {player_name} 结束游戏，游戏时长: {session.duration_seconds}秒")
             else:
                 logger.warning(f"未找到玩家 {player_name} 的活跃会话")
+            
+            # 触发实时更新
+            self.trigger_realtime_update()
                 
         except Exception as e:
             logger.error(f"处理游戏结束事件时出错: {e}")
@@ -129,6 +136,17 @@ class GameUsageTracker:
         session.end_time = end_time
         session.duration_seconds = duration
         session.save()
+    
+    def trigger_realtime_update(self):
+        """触发前端实时更新"""
+        try:
+            # 发送信号给 API 服务器触发 WebSocket 推送
+            # 这里可以通过 HTTP 请求或者直接调用 socketio.emit
+            # 为了简单起见，我们使用 HTTP 请求
+            import requests
+            requests.post('http://localhost:5001/api/trigger-update', timeout=1)
+        except Exception as e:
+            logger.debug(f"触发实时更新失败: {e}")  # 使用 debug 级别，避免过多日志
     
     def start(self):
         """启动 MQTT 客户端"""
