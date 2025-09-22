@@ -1,13 +1,19 @@
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, Response
 from flask_cors import CORS
-from flask_socketio import SocketIO, emit
+import json
+import time
+import threading
+import queue
 from models import GameSession, db
 from datetime import datetime, timedelta
 import logging
 
 app = Flask(__name__)
-CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*")
+CORS(app, origins=["*"])
+
+# 用于实时更新的队列
+update_queue = queue.Queue()
+clients = []
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -435,22 +441,39 @@ def static_files(filename):
     """提供静态文件"""
     return send_from_directory('static', filename)
 
-@socketio.on('connect')
-def handle_connect():
-    print('Client connected')
-    emit('status', {'message': 'Connected to server'})
+@app.route('/api/events')
+def events():
+    """Server-Sent Events 端点"""
+    def event_stream():
+        while True:
+            try:
+                # 等待更新事件
+                data = update_queue.get(timeout=30)
+                yield f"data: {json.dumps(data)}\n\n"
+            except queue.Empty:
+                # 发送心跳
+                yield f"data: {json.dumps({'type': 'heartbeat'})}\n\n"
+    
+    return Response(event_stream(), mimetype="text/event-stream",
+                   headers={
+                       'Cache-Control': 'no-cache',
+                       'Connection': 'keep-alive',
+                       'Access-Control-Allow-Origin': '*',
+                       'Access-Control-Allow-Headers': 'Cache-Control'
+                   })
 
-@socketio.on('disconnect')
-def handle_disconnect():
-    print('Client disconnected')
-
-def broadcast_device_update(device_data):
-    """广播设备状态更新"""
-    socketio.emit('device_update', device_data)
-
-def broadcast_stats_update(stats_data):
-    """广播统计数据更新"""
-    socketio.emit('stats_update', stats_data)
+def broadcast_update(update_type, data):
+    """广播更新到所有客户端"""
+    try:
+        update_data = {
+            'type': update_type,
+            'data': data,
+            'timestamp': time.time()
+        }
+        update_queue.put(update_data)
+        logger.info(f"广播更新: {update_type}")
+    except Exception as e:
+        logger.error(f"广播更新失败: {e}")
 
 @app.route('/api/trigger-update', methods=['POST'])
 def trigger_update():
@@ -487,7 +510,7 @@ def trigger_update():
             })
         
         # 广播设备状态更新
-        socketio.emit('device_update', {'devices': devices})
+        broadcast_update('device_update', {'devices': devices})
         
         # 获取今日统计
         today = datetime.now().date()
@@ -500,7 +523,7 @@ def trigger_update():
         today_session_count = today_sessions.count()
         
         # 广播统计更新
-        socketio.emit('stats_update', {
+        broadcast_update('stats_update', {
             'total_time_seconds': today_total_time,
             'session_count': today_session_count
         })
@@ -515,4 +538,4 @@ if __name__ == '__main__':
     from models import init_db
     init_db()
     
-    socketio.run(app, debug=True, host='0.0.0.0', port=5001)
+    app.run(debug=True, host='0.0.0.0', port=5001)

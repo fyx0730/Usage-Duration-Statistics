@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI 互动展示框设备使用时长统计</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -130,76 +129,84 @@
             height: 300px;
             margin: 20px 0;
         }
-        
+
         .device-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 15px;
             margin-top: 20px;
         }
-        
+
         .device-card {
             background: white;
             padding: 15px;
             border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             border-left: 4px solid #ddd;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-        
+
         .device-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
-        
+
         .device-card.online {
             border-left-color: #28a745;
         }
-        
+
         .device-card.playing {
             border-left-color: #007bff;
             animation: pulse 2s infinite;
         }
-        
+
         .device-card.offline {
             border-left-color: #dc3545;
         }
-        
+
         @keyframes pulse {
-            0% { box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-            50% { box-shadow: 0 2px 15px rgba(0,123,255,0.3); }
-            100% { box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+            0% {
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            }
+
+            50% {
+                box-shadow: 0 2px 15px rgba(0, 123, 255, 0.3);
+            }
+
+            100% {
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            }
         }
-        
+
         .device-name {
             font-weight: bold;
             margin-bottom: 5px;
         }
-        
+
         .device-status {
             font-size: 0.9em;
             padding: 2px 6px;
             border-radius: 3px;
             color: white;
         }
-        
+
         .device-status.online {
             background-color: #28a745;
         }
-        
+
         .device-status.playing {
             background-color: #007bff;
         }
-        
+
         .device-status.offline {
             background-color: #dc3545;
         }
-        
+
         .device-actions {
             margin-top: 10px;
             text-align: right;
         }
-        
+
         .delete-btn {
             background: #dc3545;
             color: white;
@@ -212,15 +219,15 @@
             opacity: 0;
             transition: opacity 0.3s ease;
         }
-        
+
         .delete-btn:hover {
             background: #c82333;
         }
-        
+
         .device-card:hover .delete-btn {
             opacity: 1;
         }
-        
+
         .status-indicator {
             display: inline-block;
             width: 12px;
@@ -228,38 +235,46 @@
             border-radius: 50%;
             margin-right: 8px;
         }
-        
+
         .status-indicator.online {
             background-color: #28a745;
         }
-        
+
         .status-indicator.playing {
             background-color: #007bff;
             animation: blink 1s infinite;
         }
-        
+
         .status-indicator.offline {
             background-color: #dc3545;
         }
-        
+
         @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0.3; }
+
+            0%,
+            50% {
+                opacity: 1;
+            }
+
+            51%,
+            100% {
+                opacity: 0.3;
+            }
         }
-        
+
         .confirm-dialog {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.5);
             display: none;
             justify-content: center;
             align-items: center;
             z-index: 1000;
         }
-        
+
         .confirm-content {
             background: white;
             padding: 30px;
@@ -267,11 +282,11 @@
             text-align: center;
             max-width: 400px;
         }
-        
+
         .confirm-buttons {
             margin-top: 20px;
         }
-        
+
         .confirm-buttons button {
             margin: 0 10px;
             padding: 10px 20px;
@@ -279,39 +294,40 @@
             border-radius: 5px;
             cursor: pointer;
         }
-        
+
         .btn-confirm {
             background: #dc3545;
             color: white;
         }
-        
+
         .btn-cancel {
             background: #6c757d;
             color: white;
         }
-        
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
         }
-        
-        th, td {
+
+        th,
+        td {
             padding: 12px;
             text-align: left;
             border-bottom: 1px solid #ddd;
         }
-        
+
         th {
             background-color: #f8f9fa;
             font-weight: bold;
             color: #333;
         }
-        
+
         tr:hover {
             background-color: #f5f5f5;
         }
-        
+
         .daily-item {
             background: white;
             border: 1px solid #e0e0e0;
@@ -319,7 +335,7 @@
             margin-bottom: 15px;
             overflow: hidden;
         }
-        
+
         .daily-header {
             background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
             padding: 15px 20px;
@@ -329,60 +345,60 @@
             justify-content: space-between;
             align-items: center;
         }
-        
+
         .daily-header:hover {
             background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
         }
-        
+
         .daily-date {
             font-weight: bold;
             font-size: 1.1em;
             color: #333;
         }
-        
+
         .daily-stats {
             display: flex;
             gap: 20px;
             font-size: 0.9em;
             color: #666;
         }
-        
+
         .daily-content {
             padding: 20px;
             display: none;
         }
-        
+
         .daily-content.expanded {
             display: block;
         }
-        
+
         .device-summary {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 15px;
         }
-        
+
         .device-summary-card {
             background: #f8f9fa;
             padding: 15px;
             border-radius: 6px;
             border-left: 4px solid #667eea;
         }
-        
+
         .device-summary-name {
             font-weight: bold;
             margin-bottom: 8px;
         }
-        
+
         .device-summary-stats {
             font-size: 0.9em;
             color: #666;
         }
-        
+
         .expand-icon {
             transition: transform 0.3s ease;
         }
-        
+
         .expand-icon.rotated {
             transform: rotate(180deg);
         }
@@ -430,7 +446,8 @@
                     <span class="status-indicator online" style="margin-left: 20px;"></span>在线
                     <span class="status-indicator offline" style="margin-left: 20px;"></span>离线
                 </div>
-                <button onclick="loadDeviceStatus()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                <button onclick="loadDeviceStatus()"
+                    style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
                     🔄 刷新状态
                 </button>
             </div>
@@ -438,7 +455,7 @@
                 <div class="loading">加载设备状态中...</div>
             </div>
         </div>
-        
+
         <div class="section">
             <h2>🏆 设备使用时长排行榜</h2>
             <button class="config-btn" onclick="loadPlayers()">🔄 刷新数据</button>
@@ -457,7 +474,7 @@
                 </tbody>
             </table>
         </div>
-        
+
         <div class="section">
             <h2>📅 每日使用汇总</h2>
             <div id="dailySummaryLoading" class="loading" style="display: none;">加载中...</div>
@@ -482,63 +499,70 @@
     <script>
         // 自动配置 API 地址
         const API_BASE = 'https://web-production-fb0f.up.railway.app/api';
-        const SOCKET_URL = 'https://web-production-fb0f.up.railway.app';
         let usageChart = null;
         let deleteCallback = null;
-        let socket = null;
+        let eventSource = null;
 
         // 页面加载时自动加载数据
         document.addEventListener('DOMContentLoaded', function () {
             loadData();
-            initWebSocket();
+            initEventSource();
         });
-        
-        function initWebSocket() {
+
+        function initEventSource() {
             try {
-                socket = io(SOCKET_URL);
+                eventSource = new EventSource(`${API_BASE}/events`);
                 
-                socket.on('connect', function() {
-                    console.log('✅ WebSocket 连接成功');
-                });
+                eventSource.onopen = function() {
+                    console.log('✅ 实时连接已建立');
+                };
                 
-                socket.on('disconnect', function() {
-                    console.log('❌ WebSocket 连接断开');
-                });
+                eventSource.onerror = function(error) {
+                    console.log('❌ 实时连接错误:', error);
+                };
                 
-                socket.on('device_update', function(data) {
-                    console.log('📱 收到设备状态更新:', data);
-                    updateDeviceStatus(data.devices);
-                });
-                
-                socket.on('stats_update', function(data) {
-                    console.log('📊 收到统计数据更新:', data);
-                    updateStats(data);
-                });
+                eventSource.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        
+                        if (data.type === 'device_update') {
+                            console.log('📱 收到设备状态更新:', data.data);
+                            updateDeviceStatus(data.data.devices);
+                        } else if (data.type === 'stats_update') {
+                            console.log('📊 收到统计数据更新:', data.data);
+                            updateStats(data.data);
+                        } else if (data.type === 'heartbeat') {
+                            console.log('💓 心跳');
+                        }
+                    } catch (e) {
+                        console.error('解析实时数据失败:', e);
+                    }
+                };
                 
             } catch (error) {
-                console.error('WebSocket 初始化失败:', error);
+                console.error('EventSource 初始化失败:', error);
             }
         }
-        
+
         function updateDeviceStatus(devices) {
             const deviceGrid = document.getElementById('deviceGrid');
             if (!devices || devices.length === 0) {
                 deviceGrid.innerHTML = '<div class="loading">暂无设备数据</div>';
                 return;
             }
-            
+
             deviceGrid.innerHTML = '';
-            
+
             devices.forEach(device => {
                 const deviceCard = document.createElement('div');
                 deviceCard.className = `device-card ${device.status}`;
-                
+
                 const statusText = {
                     'playing': '使用中',
                     'online': '在线',
                     'offline': '离线'
                 };
-                
+
                 deviceCard.innerHTML = `
                     <div class="device-name">${device.player_name}</div>
                     <div class="device-status ${device.status}">${statusText[device.status]}</div>
@@ -546,11 +570,11 @@
                         实时状态更新
                     </div>
                 `;
-                
+
                 deviceGrid.appendChild(deviceCard);
             });
         }
-        
+
         function updateStats(stats) {
             document.getElementById('todayTime').textContent = Math.round(stats.total_time_seconds / 60);
             document.getElementById('todaySessions').textContent = stats.session_count;
@@ -571,13 +595,13 @@
                 console.error('加载数据失败:', error);
             }
         }
-        
+
         function formatDuration(seconds) {
             if (!seconds) return '--';
             const hours = Math.floor(seconds / 3600);
             const minutes = Math.floor((seconds % 3600) / 60);
             const secs = seconds % 60;
-            
+
             if (hours > 0) {
                 return `${hours}小时${minutes}分钟`;
             } else if (minutes > 0) {
@@ -586,25 +610,25 @@
                 return `${secs}秒`;
             }
         }
-        
+
         function formatDateTime(dateString) {
             if (!dateString) return '--';
             const date = new Date(dateString);
             return date.toLocaleString('zh-CN');
         }
-        
+
         async function loadPlayers() {
             try {
                 document.getElementById('playersLoading').style.display = 'block';
                 document.getElementById('playersTable').style.display = 'none';
-                
+
                 const response = await fetch(`${API_BASE}/players`);
                 const result = await response.json();
-                
+
                 if (result.success) {
                     const tbody = document.getElementById('playersBody');
                     tbody.innerHTML = '';
-                    
+
                     result.data.forEach((player, index) => {
                         const row = tbody.insertRow();
                         row.innerHTML = `
@@ -615,7 +639,7 @@
                             <td>${formatDateTime(player.last_played)}</td>
                         `;
                     });
-                    
+
                     document.getElementById('playersLoading').style.display = 'none';
                     document.getElementById('playersTable').style.display = 'table';
                 }
@@ -624,31 +648,31 @@
                 document.getElementById('playersLoading').textContent = '加载失败';
             }
         }
-        
+
         async function loadDailySummary() {
             try {
                 document.getElementById('dailySummaryLoading').style.display = 'block';
                 document.getElementById('dailySummaryContainer').style.display = 'none';
-                
+
                 const response = await fetch(`${API_BASE}/daily-summary?days=7`);
                 const result = await response.json();
-                
+
                 if (result.success) {
                     const container = document.getElementById('dailySummaryContainer');
                     container.innerHTML = '';
-                    
+
                     result.data.forEach((dayData, index) => {
                         const date = new Date(dayData.date);
-                        const dateStr = date.toLocaleDateString('zh-CN', { 
-                            year: 'numeric', 
-                            month: 'long', 
+                        const dateStr = date.toLocaleDateString('zh-CN', {
+                            year: 'numeric',
+                            month: 'long',
                             day: 'numeric',
                             weekday: 'long'
                         });
-                        
+
                         const dailyItem = document.createElement('div');
                         dailyItem.className = 'daily-item';
-                        
+
                         dailyItem.innerHTML = `
                             <div class="daily-header" onclick="toggleDailyContent(${index})">
                                 <div class="daily-date">${dateStr}</div>
@@ -674,10 +698,10 @@
                                 </div>
                             </div>
                         `;
-                        
+
                         container.appendChild(dailyItem);
                     });
-                    
+
                     document.getElementById('dailySummaryLoading').style.display = 'none';
                     document.getElementById('dailySummaryContainer').style.display = 'block';
                 }
@@ -686,11 +710,11 @@
                 document.getElementById('dailySummaryLoading').textContent = '加载失败';
             }
         }
-        
+
         function toggleDailyContent(index) {
             const content = document.getElementById(`content-${index}`);
             const icon = document.getElementById(`icon-${index}`);
-            
+
             if (content.classList.contains('expanded')) {
                 content.classList.remove('expanded');
                 icon.classList.remove('rotated');
@@ -722,35 +746,35 @@
                 console.log('Loading device status...');
                 const response = await fetch(`${API_BASE}/device-status`);
                 console.log('Device status response status:', response.status);
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                
+
                 const result = await response.json();
                 console.log('Device status result:', result);
-                
+
                 if (result.success) {
                     const deviceGrid = document.getElementById('deviceGrid');
                     const devices = result.data.devices;
-                    
+
                     if (devices.length === 0) {
                         deviceGrid.innerHTML = '<div class="loading">暂无设备数据</div>';
                         return;
                     }
-                    
+
                     deviceGrid.innerHTML = '';
-                    
+
                     devices.forEach(device => {
                         const deviceCard = document.createElement('div');
                         deviceCard.className = `device-card ${device.status}`;
-                        
+
                         const statusText = {
                             'playing': '使用中',
                             'online': '在线',
                             'offline': '离线'
                         };
-                        
+
                         deviceCard.innerHTML = `
                             <div class="device-name">${device.player_name}</div>
                             <div class="device-status ${device.status}">${statusText[device.status]}</div>
@@ -763,7 +787,7 @@
                                 </button>
                             </div>
                         `;
-                        
+
                         deviceGrid.appendChild(deviceCard);
                     });
                 }
@@ -781,7 +805,7 @@
                 if (result.success) {
                     const chartData = result.data.daily_data;
                     const ctx = document.getElementById('usageChart').getContext('2d');
-                    
+
                     // 销毁现有图表
                     if (usageChart) {
                         usageChart.destroy();
@@ -825,18 +849,18 @@
             loadStats();
             loadDeviceStatus();
         }, 10000);
-        
+
         // 每5分钟刷新图表和其他数据
         setInterval(() => {
             loadChart();
             loadPlayers();
             loadDailySummary();
         }, 300000);
-        
+
         function showDeleteConfirm(type, id, name) {
             const dialog = document.getElementById('confirmDialog');
             const message = document.getElementById('confirmMessage');
-            
+
             if (type === 'device') {
                 message.textContent = `确定要删除设备 "${name}" 及其所有相关数据吗？此操作不可撤销。`;
                 deleteCallback = () => deleteDevice(id, name);
@@ -844,35 +868,35 @@
                 message.textContent = `确定要删除这条会话记录吗？此操作不可撤销。`;
                 deleteCallback = () => deleteSession(id);
             }
-            
+
             dialog.style.display = 'flex';
         }
-        
+
         function cancelDelete() {
             document.getElementById('confirmDialog').style.display = 'none';
             deleteCallback = null;
         }
-        
+
         function confirmDelete() {
             if (deleteCallback) {
                 deleteCallback();
             }
             cancelDelete();
         }
-        
+
         async function deleteDevice(playerId, playerName) {
             try {
                 console.log(`删除设备: ${playerId}`);
                 const response = await fetch(`${API_BASE}/device/${encodeURIComponent(playerId)}`, {
                     method: 'DELETE'
                 });
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     alert(`成功删除设备 "${playerName}"`);
                     // 刷新相关数据
@@ -885,20 +909,20 @@
                 alert(`删除设备失败: ${error.message}`);
             }
         }
-        
+
         async function deleteSession(sessionId) {
             try {
                 console.log(`删除会话: ${sessionId}`);
                 const response = await fetch(`${API_BASE}/session/${sessionId}`, {
                     method: 'DELETE'
                 });
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     alert('成功删除会话记录');
                     // 刷新相关数据

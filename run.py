@@ -18,10 +18,9 @@ def start_mqtt_client():
 def start_web_server():
     """启动 Web 服务器"""
     import os
-    from api import socketio
     port = int(os.environ.get('PORT', 5001))
     print(f"启动 Web 服务器，端口: {port}")
-    socketio.run(app, debug=False, host='0.0.0.0', port=port, use_reloader=False)
+    app.run(debug=False, host='0.0.0.0', port=port, use_reloader=False)
 
 if __name__ == "__main__":
     print("=== 游戏设备使用时长统计系统 ===")
