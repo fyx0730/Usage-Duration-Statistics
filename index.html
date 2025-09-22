@@ -423,10 +423,15 @@
 
         <div class="section">
             <h2>🖥️ 设备实时状态</h2>
-            <div style="margin-bottom: 15px;">
-                <span class="status-indicator playing"></span>使用中
-                <span class="status-indicator online" style="margin-left: 20px;"></span>在线
-                <span class="status-indicator offline" style="margin-left: 20px;"></span>离线
+            <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <span class="status-indicator playing"></span>使用中
+                    <span class="status-indicator online" style="margin-left: 20px;"></span>在线
+                    <span class="status-indicator offline" style="margin-left: 20px;"></span>离线
+                </div>
+                <button onclick="loadDeviceStatus()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                    🔄 刷新状态
+                </button>
             </div>
             <div id="deviceGrid" class="device-grid">
                 <div class="loading">加载设备状态中...</div>
@@ -748,10 +753,18 @@
             }
         }
 
-        // 每30秒自动刷新数据
+        // 每10秒刷新设备状态和统计数据（更实时）
         setInterval(() => {
-            loadData();
-        }, 30000);
+            loadStats();
+            loadDeviceStatus();
+        }, 10000);
+        
+        // 每5分钟刷新图表和其他数据
+        setInterval(() => {
+            loadChart();
+            loadPlayers();
+            loadDailySummary();
+        }, 300000);
         
         function showDeleteConfirm(type, id, name) {
             const dialog = document.getElementById('confirmDialog');

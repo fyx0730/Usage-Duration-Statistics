@@ -205,7 +205,12 @@ def get_device_status():
             last_activity = None
             
             if latest_session:
-                last_activity = latest_session.start_time
+                # 使用最新的活动时间（开始时间或结束时间中较晚的）
+                if latest_session.end_time:
+                    last_activity = max(latest_session.start_time, latest_session.end_time)
+                else:
+                    last_activity = latest_session.start_time
+                
                 if latest_session.end_time is None:
                     # 有未结束的会话，设备在线且使用中
                     status = "playing"
