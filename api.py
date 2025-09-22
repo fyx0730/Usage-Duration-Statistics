@@ -4,6 +4,13 @@ import json
 import time
 import threading
 import queue
+
+def format_datetime_for_frontend(dt):
+    """格式化日期时间为前端可用的格式"""
+    if dt is None:
+        return None
+    # 确保返回 ISO 格式的 UTC 时间
+    return dt.isoformat() + 'Z' if not dt.isoformat().endswith('Z') else dt.isoformat()
 from models import GameSession, db
 from datetime import datetime, timedelta
 import logging
@@ -181,7 +188,7 @@ def get_players():
                 'player_name': player.player_name,
                 'total_time_seconds': total_time,
                 'session_count': session_count,
-                'last_played': last_played.isoformat() if last_played else None
+                'last_played': format_datetime_for_frontend(last_played)
             })
         
         # 按总使用时长排序
@@ -242,7 +249,7 @@ def get_device_status():
                 'player_name': device.player_name,
                 'status': status,
                 'current_session_id': current_session_id,
-                'last_activity': last_activity.isoformat() if last_activity else None
+                'last_activity': format_datetime_for_frontend(last_activity)
             })
         
         # 统计各状态数量

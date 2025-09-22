@@ -613,17 +613,27 @@
 
         function formatDateTime(dateString) {
             if (!dateString) return '--';
-
+            
             try {
-                const date = new Date(dateString);
-
+                // 确保日期字符串格式正确
+                let isoString = dateString;
+                if (!dateString.includes('T')) {
+                    // 如果是 "2025-09-22 07:28:15.182148" 格式，转换为 ISO 格式
+                    isoString = dateString.replace(' ', 'T') + 'Z'; // 添加 Z 表示 UTC
+                } else if (!dateString.endsWith('Z') && !dateString.includes('+')) {
+                    // 如果是 ISO 格式但没有时区信息，假设是 UTC
+                    isoString = dateString + 'Z';
+                }
+                
+                const date = new Date(isoString);
+                
                 // 检查日期是否有效
                 if (isNaN(date.getTime())) {
-                    console.error('无效的日期字符串:', dateString);
+                    console.error('无效的日期字符串:', dateString, '转换后:', isoString);
                     return '无效日期';
                 }
-
-                // 使用本地时区格式化
+                
+                // 转换为中国时区显示
                 const options = {
                     year: 'numeric',
                     month: '2-digit',
@@ -631,9 +641,10 @@
                     hour: '2-digit',
                     minute: '2-digit',
                     second: '2-digit',
-                    timeZone: 'Asia/Shanghai'  // 明确指定中国时区
+                    timeZone: 'Asia/Shanghai',
+                    hour12: false
                 };
-
+                
                 return date.toLocaleString('zh-CN', options);
             } catch (error) {
                 console.error('时间格式化错误:', error, '原始数据:', dateString);
