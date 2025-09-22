@@ -1,0 +1,23 @@
+app = "game-device-monitor"
+primary_region = "nrt"
+
+[build]
+
+[env]
+  MQTT_HOST = "mqtt.aimaker.space"
+  MQTT_PORT = "1883"
+  MQTT_USERNAME = "guest"
+  MQTT_PASSWORD = "test"
+
+[http_service]
+  internal_port = 5001
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 256

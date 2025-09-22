@@ -30,67 +30,83 @@ git push -u origin main
 
 部署完成后，访问：`https://你的用户名.github.io/你的仓库名/`
 
-## 后端部署到 Heroku
+## 后端部署选项
 
-### 1. 安装 Heroku CLI
+### 选项1: Railway 部署 ⭐ 推荐
 
-```bash
-# macOS
-brew tap heroku/brew && brew install heroku
+1. **注册账号**：访问 [railway.app](https://railway.app)
+2. **连接 GitHub**：授权 Railway 访问你的仓库
+3. **创建项目**：
+   - 点击 "New Project"
+   - 选择 "Deploy from GitHub repo"
+   - 选择你的仓库
+4. **配置环境变量**：
+   ```
+   PORT=5001
+   MQTT_HOST=mqtt.aimaker.space
+   MQTT_PORT=1883
+   MQTT_USERNAME=guest
+   MQTT_PASSWORD=test
+   ```
+5. **自动部署**：推送代码到 GitHub 会自动部署
 
-# 或访问 https://devcenter.heroku.com/articles/heroku-cli 下载
-```
+### 选项2: Render 部署
 
-### 2. 登录并创建应用
+1. **注册账号**：访问 [render.com](https://render.com)
+2. **创建 Web Service**：
+   - 连接 GitHub 仓库
+   - 选择 "Web Service"
+   - 配置：
+     - **Build Command**: `pip install -r requirements.txt`
+     - **Start Command**: `python run.py`
+3. **设置环境变量**：在 Environment 标签页添加
+4. **部署**：点击 "Create Web Service"
 
-```bash
-heroku login
-heroku create 你的应用名称
-```
+### 选项3: Fly.io 部署
 
-### 3. 部署后端
+1. **安装 CLI**：
+   ```bash
+   # macOS
+   brew install flyctl
+   
+   # 或访问 https://fly.io/docs/getting-started/installing-flyctl/
+   ```
 
-```bash
-git add .
-git commit -m "Deploy to Heroku"
-git push heroku main
-```
+2. **登录并初始化**：
+   ```bash
+   fly auth login
+   fly launch
+   ```
 
-### 4. 配置环境变量（如需要）
-
-```bash
-heroku config:set MQTT_HOST=mqtt.aimaker.space
-heroku config:set MQTT_PORT=1883
-heroku config:set MQTT_USERNAME=guest
-heroku config:set MQTT_PASSWORD=test
-```
-
-### 5. 查看日志
-
-```bash
-heroku logs --tail
-```
+3. **部署**：
+   ```bash
+   fly deploy
+   ```
 
 ## 其他部署选项
 
-### Railway
+### 选项4: PythonAnywhere
 
-1. 访问 [railway.app](https://railway.app)
-2. 连接 GitHub 仓库
-3. 自动部署
+1. **注册免费账号**：访问 [pythonanywhere.com](https://www.pythonanywhere.com)
+2. **上传代码**：使用 Git 或文件上传
+3. **配置 Web 应用**：
+   - 创建新的 Web 应用
+   - 选择 Flask
+   - 配置 WSGI 文件
+4. **安装依赖**：在 Bash 控制台运行 `pip install -r requirements.txt`
 
-### Render
+### 选项5: Vercel (Serverless)
 
-1. 访问 [render.com](https://render.com)
-2. 连接 GitHub 仓库
-3. 选择 Web Service
-4. 设置启动命令：`python run.py`
-
-### DigitalOcean App Platform
-
-1. 访问 [DigitalOcean](https://www.digitalocean.com/products/app-platform/)
-2. 连接 GitHub 仓库
-3. 配置 Python 应用
+1. **安装 Vercel CLI**：
+   ```bash
+   npm i -g vercel
+   ```
+2. **登录并部署**：
+   ```bash
+   vercel login
+   vercel
+   ```
+3. **配置**：需要将 Flask 应用改为 Serverless 函数
 
 ## 配置前端连接后端
 

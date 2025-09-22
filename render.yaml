@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: game-device-monitor
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python run.py
+    envVars:
+      - key: MQTT_HOST
+        value: mqtt.aimaker.space
+      - key: MQTT_PORT
+        value: 1883
+      - key: MQTT_USERNAME
+        value: guest
+      - key: MQTT_PASSWORD
+        value: test
