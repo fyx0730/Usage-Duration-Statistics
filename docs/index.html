@@ -613,8 +613,32 @@
 
         function formatDateTime(dateString) {
             if (!dateString) return '--';
-            const date = new Date(dateString);
-            return date.toLocaleString('zh-CN');
+            
+            try {
+                const date = new Date(dateString);
+                
+                // 检查日期是否有效
+                if (isNaN(date.getTime())) {
+                    console.error('无效的日期字符串:', dateString);
+                    return '无效日期';
+                }
+                
+                // 使用本地时区格式化
+                const options = {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    timeZone: 'Asia/Shanghai'  // 明确指定中国时区
+                };
+                
+                return date.toLocaleString('zh-CN', options);
+            } catch (error) {
+                console.error('时间格式化错误:', error, '原始数据:', dateString);
+                return '格式错误';
+            }
         }
 
         async function loadPlayers() {
