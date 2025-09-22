@@ -129,6 +129,103 @@
             height: 300px;
             margin: 20px 0;
         }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .daily-item {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+        
+        .daily-header {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 15px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .daily-header:hover {
+            background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+        }
+        
+        .daily-date {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #333;
+        }
+        
+        .daily-stats {
+            display: flex;
+            gap: 20px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        .daily-content {
+            padding: 20px;
+            display: none;
+        }
+        
+        .daily-content.expanded {
+            display: block;
+        }
+        
+        .device-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .device-summary-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .device-summary-name {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .device-summary-stats {
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        .expand-icon {
+            transition: transform 0.3s ease;
+        }
+        
+        .expand-icon.rotated {
+            transform: rotate(180deg);
+        }
     </style>
 </head>
 
@@ -137,15 +234,6 @@
         <div class="header">
             <h1>🎮 游戏设备使用时长统计</h1>
             <p>实时监控游戏设备使用情况</p>
-        </div>
-
-        <div class="config-section">
-            <h3>⚙️ API 配置</h3>
-            <input type="text" id="apiUrl" class="config-input" placeholder="https://web-production-fb0f.up.railway.app/api
-" />
-            <button class="config-btn" onclick="saveConfig()">保存配置</button>
-            <button class="config-btn" onclick="testConnection()" style="margin-left: 10px;">测试连接</button>
-            <div id="connectionStatus"></div>
         </div>
 
         <div class="stats-grid">
@@ -159,11 +247,11 @@
             </div>
             <div class="stat-card">
                 <div class="stat-value" id="todaySessions">--</div>
-                <div class="stat-label">当日游戏次数</div>
+                <div class="stat-label">当日使用次数</div>
             </div>
             <div class="stat-card">
                 <div class="stat-value" id="activePlayers">--</div>
-                <div class="stat-label">当日活跃玩家</div>
+                <div class="stat-label">当日活跃设备</div>
             </div>
         </div>
 
@@ -176,84 +264,188 @@
 
         <div class="section">
             <h2>🖥️ 设备实时状态</h2>
-            <div id="deviceStatus" class="loading">请先配置 API 地址</div>
+            <div id="deviceStatus" class="loading">加载中...</div>
+        </div>
+        
+        <div class="section">
+            <h2>🏆 设备使用时长排行榜</h2>
+            <button class="config-btn" onclick="loadPlayers()">🔄 刷新数据</button>
+            <div id="playersLoading" class="loading" style="display: none;">加载中...</div>
+            <table id="playersTable" style="display: none; width: 100%; border-collapse: collapse; margin-top: 20px;">
+                <thead>
+                    <tr style="background-color: #f8f9fa;">
+                        <th style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd;">排名</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd;">设备名称</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd;">总使用时长</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd;">使用次数</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd;">最后使用时间</th>
+                    </tr>
+                </thead>
+                <tbody id="playersBody">
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="section">
+            <h2>📅 每日使用汇总</h2>
+            <div id="dailySummaryLoading" class="loading" style="display: none;">加载中...</div>
+            <div id="dailySummaryContainer" style="display: none;">
+                <!-- 每日汇总内容将在这里动态生成 -->
+            </div>
         </div>
     </div>
 
     <script>
-        // 配置管理
-        let API_BASE = '';
+        // 自动配置 API 地址
+        const API_BASE = 'https://web-production-fb0f.up.railway.app/api';
+        let usageChart = null;
 
-        // 页面加载时恢复配置
+        // 页面加载时自动加载数据
         document.addEventListener('DOMContentLoaded', function () {
-            const savedApiUrl = localStorage.getItem('apiUrl');
-            if (savedApiUrl) {
-                document.getElementById('apiUrl').value = savedApiUrl;
-                API_BASE = savedApiUrl;
-                loadData();
-            }
+            loadData();
         });
 
-        function saveConfig() {
-            const apiUrl = document.getElementById('apiUrl').value.trim();
-            if (!apiUrl) {
-                alert('请输入 API 地址');
-                return;
-            }
 
-            // 移除末尾的斜杠
-            API_BASE = apiUrl.replace(/\/$/, '');
-            localStorage.setItem('apiUrl', API_BASE);
-
-            document.getElementById('connectionStatus').innerHTML =
-                '<div style="color: green; margin-top: 10px;">✅ 配置已保存</div>';
-
-            // 保存后自动加载数据
-            setTimeout(() => {
-                loadData();
-            }, 1000);
-        }
-
-        async function testConnection() {
-            if (!API_BASE) {
-                alert('请先输入并保存 API 地址');
-                return;
-            }
-
-            const statusDiv = document.getElementById('connectionStatus');
-            statusDiv.innerHTML = '<div style="color: blue; margin-top: 10px;">🔄 测试连接中...</div>';
-
-            try {
-                console.log('Testing connection to:', `${API_BASE}/stats`);
-                const response = await fetch(`${API_BASE}/stats`);
-                console.log('Response status:', response.status);
-
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('Response data:', data);
-                    statusDiv.innerHTML = '<div style="color: green; margin-top: 10px;">✅ 连接成功</div>';
-                } else {
-                    const errorText = await response.text();
-                    console.log('Error response:', errorText);
-                    statusDiv.innerHTML = '<div style="color: red; margin-top: 10px;">❌ 连接失败: HTTP ' + response.status + '</div>';
-                }
-            } catch (error) {
-                console.error('Connection error:', error);
-                statusDiv.innerHTML = '<div style="color: red; margin-top: 10px;">❌ 连接失败: ' + error.message + '</div>';
-            }
-        }
 
         async function loadData() {
-            if (!API_BASE) return;
-
             try {
                 await Promise.all([
                     loadStats(),
                     loadDeviceStatus(),
-                    loadChart()
+                    loadChart(),
+                    loadPlayers(),
+                    loadDailySummary()
                 ]);
             } catch (error) {
                 console.error('加载数据失败:', error);
+            }
+        }
+        
+        function formatDuration(seconds) {
+            if (!seconds) return '--';
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            
+            if (hours > 0) {
+                return `${hours}小时${minutes}分钟`;
+            } else if (minutes > 0) {
+                return `${minutes}分钟${secs}秒`;
+            } else {
+                return `${secs}秒`;
+            }
+        }
+        
+        function formatDateTime(dateString) {
+            if (!dateString) return '--';
+            const date = new Date(dateString);
+            return date.toLocaleString('zh-CN');
+        }
+        
+        async function loadPlayers() {
+            try {
+                document.getElementById('playersLoading').style.display = 'block';
+                document.getElementById('playersTable').style.display = 'none';
+                
+                const response = await fetch(`${API_BASE}/players`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    const tbody = document.getElementById('playersBody');
+                    tbody.innerHTML = '';
+                    
+                    result.data.forEach((player, index) => {
+                        const row = tbody.insertRow();
+                        row.innerHTML = `
+                            <td>${index + 1}</td>
+                            <td>${player.player_name}</td>
+                            <td>${formatDuration(player.total_time_seconds)}</td>
+                            <td>${player.session_count}</td>
+                            <td>${formatDateTime(player.last_played)}</td>
+                        `;
+                    });
+                    
+                    document.getElementById('playersLoading').style.display = 'none';
+                    document.getElementById('playersTable').style.display = 'table';
+                }
+            } catch (error) {
+                console.error('加载玩家数据失败:', error);
+                document.getElementById('playersLoading').textContent = '加载失败';
+            }
+        }
+        
+        async function loadDailySummary() {
+            try {
+                document.getElementById('dailySummaryLoading').style.display = 'block';
+                document.getElementById('dailySummaryContainer').style.display = 'none';
+                
+                const response = await fetch(`${API_BASE}/daily-summary?days=7`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    const container = document.getElementById('dailySummaryContainer');
+                    container.innerHTML = '';
+                    
+                    result.data.forEach((dayData, index) => {
+                        const date = new Date(dayData.date);
+                        const dateStr = date.toLocaleDateString('zh-CN', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric',
+                            weekday: 'long'
+                        });
+                        
+                        const dailyItem = document.createElement('div');
+                        dailyItem.className = 'daily-item';
+                        
+                        dailyItem.innerHTML = `
+                            <div class="daily-header" onclick="toggleDailyContent(${index})">
+                                <div class="daily-date">${dateStr}</div>
+                                <div class="daily-stats">
+                                    <span>🕐 ${dayData.total_time_minutes} 分钟</span>
+                                    <span>🎮 ${dayData.total_sessions} 次游戏</span>
+                                    <span>📱 ${dayData.active_devices_count} 台设备</span>
+                                    <span class="expand-icon" id="icon-${index}">▼</span>
+                                </div>
+                            </div>
+                            <div class="daily-content" id="content-${index}">
+                                <div class="device-summary">
+                                    ${dayData.devices.map(device => `
+                                        <div class="device-summary-card">
+                                            <div class="device-summary-name">${device.player_name}</div>
+                                            <div class="device-summary-stats">
+                                                <div>游戏次数: ${device.sessions}</div>
+                                                <div>使用时长: ${formatDuration(device.total_time)}</div>
+                                                <div>最后活动: ${formatDateTime(device.last_activity)}</div>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                        
+                        container.appendChild(dailyItem);
+                    });
+                    
+                    document.getElementById('dailySummaryLoading').style.display = 'none';
+                    document.getElementById('dailySummaryContainer').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('加载每日汇总数据失败:', error);
+                document.getElementById('dailySummaryLoading').textContent = '加载失败';
+            }
+        }
+        
+        function toggleDailyContent(index) {
+            const content = document.getElementById(`content-${index}`);
+            const icon = document.getElementById(`icon-${index}`);
+            
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                icon.classList.remove('rotated');
+            } else {
+                content.classList.add('expanded');
+                icon.classList.add('rotated');
             }
         }
 
@@ -322,8 +514,13 @@
                 if (result.success) {
                     const chartData = result.data.daily_data;
                     const ctx = document.getElementById('usageChart').getContext('2d');
+                    
+                    // 销毁现有图表
+                    if (usageChart) {
+                        usageChart.destroy();
+                    }
 
-                    new Chart(ctx, {
+                    usageChart = new Chart(ctx, {
                         type: 'line',
                         data: {
                             labels: chartData.map(item => {
