@@ -163,17 +163,25 @@ def get_players():
             total_time = sum(session.duration_seconds for session in player_sessions)
             session_count = player_sessions.count()
             
-            # 最后一次游戏时间
+            # 最后一次游戏时间 - 使用最新的活动时间
             last_session = GameSession.select().where(
                 GameSession.player_id == player.player_id
             ).order_by(GameSession.start_time.desc()).first()
+            
+            last_played = None
+            if last_session:
+                # 使用最新的活动时间（开始时间或结束时间中较晚的）
+                if last_session.end_time:
+                    last_played = max(last_session.start_time, last_session.end_time)
+                else:
+                    last_played = last_session.start_time
             
             result.append({
                 'player_id': player.player_id,
                 'player_name': player.player_name,
                 'total_time_seconds': total_time,
                 'session_count': session_count,
-                'last_played': last_session.start_time.isoformat() if last_session else None
+                'last_played': last_played.isoformat() if last_played else None
             })
         
         # 按总使用时长排序
@@ -474,6 +482,36 @@ def broadcast_update(update_type, data):
         logger.info(f"广播更新: {update_type}")
     except Exception as e:
         logger.error(f"广播更新失败: {e}")
+
+@app.route('/api/debug-time', methods=['GET'])
+def debug_time():
+    """调试时间显示问题"""
+    try:
+        from datetime import datetime
+        
+        # 获取一些示例数据
+        sessions = GameSession.select().limit(5)
+        debug_data = []
+        
+        for session in sessions:
+            debug_data.append({
+                'player_name': session.player_name,
+                'start_time_raw': str(session.start_time),
+                'start_time_iso': session.start_time.isoformat() if session.start_time else None,
+                'end_time_raw': str(session.end_time) if session.end_time else None,
+                'end_time_iso': session.end_time.isoformat() if session.end_time else None,
+                'server_time_now': datetime.now().isoformat(),
+                'created_at': session.created_at.isoformat() if session.created_at else None
+            })
+        
+        return jsonify({
+            'success': True,
+            'server_timezone': str(datetime.now().astimezone().tzinfo),
+            'data': debug_data
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/trigger-update', methods=['POST'])
 def trigger_update():
