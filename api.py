@@ -455,9 +455,24 @@ def events():
     def event_stream():
         while True:
             try:
-                # 等待更新事件
-                data = update_queue.get(timeout=30)
-                yield f"data: {json.dumps(data)}\n\n"
+                # 等待更新事件，超时时间缩短到10秒
+                data = update_queue.get(timeout=10)
+                
+                # 如果是 MQTT 更新信号，立即获取最新数据并推送
+                if data.get('type') == 'mqtt_update':
+                    logger.info("🔄 收到 MQTT 更新信号，推送最新数据")
+                    
+                    # 获取最新设备状态
+                    device_data = get_latest_device_status()
+                    yield f"data: {json.dumps({'type': 'device_update', 'data': device_data})}\n\n"
+                    
+                    # 获取最新统计数据
+                    stats_data = get_latest_stats()
+                    yield f"data: {json.dumps({'type': 'stats_update', 'data': stats_data})}\n\n"
+                else:
+                    # 其他类型的更新
+                    yield f"data: {json.dumps(data)}\n\n"
+                    
             except queue.Empty:
                 # 发送心跳
                 yield f"data: {json.dumps({'type': 'heartbeat'})}\n\n"
@@ -469,6 +484,68 @@ def events():
                        'Access-Control-Allow-Origin': '*',
                        'Access-Control-Allow-Headers': 'Cache-Control'
                    })
+
+def get_latest_device_status():
+    """获取最新设备状态"""
+    try:
+        all_devices = GameSession.select(
+            GameSession.player_id,
+            GameSession.player_name
+        ).distinct()
+        
+        devices = []
+        for device in all_devices:
+            latest_session = GameSession.select().where(
+                GameSession.player_id == device.player_id
+            ).order_by(GameSession.start_time.desc()).first()
+            
+            status = "offline"
+            last_activity = None
+            
+            if latest_session:
+                if latest_session.end_time:
+                    last_activity = max(latest_session.start_time, latest_session.end_time)
+                else:
+                    last_activity = latest_session.start_time
+                
+                if latest_session.end_time is None:
+                    status = "playing"
+                else:
+                    time_diff = datetime.now() - latest_session.end_time
+                    if time_diff.total_seconds() < 300:
+                        status = "online"
+            
+            devices.append({
+                'player_id': device.player_id,
+                'player_name': device.player_name,
+                'status': status,
+                'last_activity': last_activity.isoformat() if last_activity else None
+            })
+        
+        return {'devices': devices}
+    except Exception as e:
+        logger.error(f"获取设备状态失败: {e}")
+        return {'devices': []}
+
+def get_latest_stats():
+    """获取最新统计数据"""
+    try:
+        today = datetime.now().date()
+        today_sessions = GameSession.select().where(
+            GameSession.start_time >= today,
+            GameSession.duration_seconds.is_null(False)
+        )
+        
+        total_time = sum(session.duration_seconds for session in today_sessions)
+        session_count = today_sessions.count()
+        
+        return {
+            'total_time_seconds': total_time,
+            'session_count': session_count
+        }
+    except Exception as e:
+        logger.error(f"获取统计数据失败: {e}")
+        return {'total_time_seconds': 0, 'session_count': 0}
 
 def broadcast_update(update_type, data):
     """广播更新到所有客户端"""

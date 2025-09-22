@@ -7,12 +7,12 @@ import threading
 import time
 from models import init_db
 from mqtt_client import GameUsageTracker
-from api import app
+from api import app, update_queue
 
 def start_mqtt_client():
     """启动 MQTT 客户端"""
     print("启动 MQTT 客户端...")
-    tracker = GameUsageTracker()
+    tracker = GameUsageTracker(update_queue=update_queue)
     tracker.start()
 
 def start_web_server():

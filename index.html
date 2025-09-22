@@ -512,19 +512,19 @@
         function initEventSource() {
             try {
                 eventSource = new EventSource(`${API_BASE}/events`);
-                
-                eventSource.onopen = function() {
+
+                eventSource.onopen = function () {
                     console.log('✅ 实时连接已建立');
                 };
-                
-                eventSource.onerror = function(error) {
+
+                eventSource.onerror = function (error) {
                     console.log('❌ 实时连接错误:', error);
                 };
-                
-                eventSource.onmessage = function(event) {
+
+                eventSource.onmessage = function (event) {
                     try {
                         const data = JSON.parse(event.data);
-                        
+
                         if (data.type === 'device_update') {
                             console.log('📱 收到设备状态更新:', data.data);
                             updateDeviceStatus(data.data.devices);
@@ -538,7 +538,7 @@
                         console.error('解析实时数据失败:', e);
                     }
                 };
-                
+
             } catch (error) {
                 console.error('EventSource 初始化失败:', error);
             }
@@ -613,16 +613,16 @@
 
         function formatDateTime(dateString) {
             if (!dateString) return '--';
-            
+
             try {
                 const date = new Date(dateString);
-                
+
                 // 检查日期是否有效
                 if (isNaN(date.getTime())) {
                     console.error('无效的日期字符串:', dateString);
                     return '无效日期';
                 }
-                
+
                 // 使用本地时区格式化
                 const options = {
                     year: 'numeric',
@@ -633,7 +633,7 @@
                     second: '2-digit',
                     timeZone: 'Asia/Shanghai'  // 明确指定中国时区
                 };
-                
+
                 return date.toLocaleString('zh-CN', options);
             } catch (error) {
                 console.error('时间格式化错误:', error, '原始数据:', dateString);

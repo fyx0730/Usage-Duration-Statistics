@@ -4,13 +4,15 @@ from datetime import datetime
 from models import GameSession, db
 import logging
 import requests
+import queue
+import threading
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class GameUsageTracker:
-    def __init__(self):
+    def __init__(self, update_queue=None):
         self.client = mqtt.Client()
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
@@ -24,6 +26,9 @@ class GameUsageTracker:
         self.topic = "game"
         self.reconnect_delay = 5
         self.max_reconnect_delay = 60
+        
+        # 实时更新队列
+        self.update_queue = update_queue
         
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
@@ -140,13 +145,26 @@ class GameUsageTracker:
     def trigger_realtime_update(self):
         """触发前端实时更新"""
         try:
-            # 发送信号给 API 服务器触发 WebSocket 推送
-            # 这里可以通过 HTTP 请求或者直接调用 socketio.emit
-            # 为了简单起见，我们使用 HTTP 请求
-            import requests
-            requests.post('http://localhost:5001/api/trigger-update', timeout=1)
+            if self.update_queue:
+                # 直接通过队列发送更新信号
+                update_data = {
+                    'type': 'mqtt_update',
+                    'timestamp': datetime.now().isoformat()
+                }
+                self.update_queue.put(update_data)
+                logger.info("✅ 成功触发实时更新（队列）")
+            else:
+                # 备用方案：HTTP 请求
+                import requests
+                try:
+                    response = requests.post('http://localhost:5001/api/trigger-update', timeout=1)
+                    if response.status_code == 200:
+                        logger.info("✅ 成功触发实时更新（HTTP）")
+                except:
+                    logger.debug("HTTP 触发失败，使用队列方式")
+                
         except Exception as e:
-            logger.debug(f"触发实时更新失败: {e}")  # 使用 debug 级别，避免过多日志
+            logger.warning(f"⚠️ 触发实时更新失败: {e}")
     
     def start(self):
         """启动 MQTT 客户端"""
