@@ -130,6 +130,165 @@
             margin: 20px 0;
         }
         
+        .device-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .device-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-left: 4px solid #ddd;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .device-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .device-card.online {
+            border-left-color: #28a745;
+        }
+        
+        .device-card.playing {
+            border-left-color: #007bff;
+            animation: pulse 2s infinite;
+        }
+        
+        .device-card.offline {
+            border-left-color: #dc3545;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+            50% { box-shadow: 0 2px 15px rgba(0,123,255,0.3); }
+            100% { box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        }
+        
+        .device-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .device-status {
+            font-size: 0.9em;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: white;
+        }
+        
+        .device-status.online {
+            background-color: #28a745;
+        }
+        
+        .device-status.playing {
+            background-color: #007bff;
+        }
+        
+        .device-status.offline {
+            background-color: #dc3545;
+        }
+        
+        .device-actions {
+            margin-top: 10px;
+            text-align: right;
+        }
+        
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.8em;
+            margin-left: 10px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .delete-btn:hover {
+            background: #c82333;
+        }
+        
+        .device-card:hover .delete-btn {
+            opacity: 1;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-indicator.online {
+            background-color: #28a745;
+        }
+        
+        .status-indicator.playing {
+            background-color: #007bff;
+            animation: blink 1s infinite;
+        }
+        
+        .status-indicator.offline {
+            background-color: #dc3545;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+        
+        .confirm-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .confirm-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 400px;
+        }
+        
+        .confirm-buttons {
+            margin-top: 20px;
+        }
+        
+        .confirm-buttons button {
+            margin: 0 10px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .btn-confirm {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-cancel {
+            background: #6c757d;
+            color: white;
+        }
+        
         table {
             width: 100%;
             border-collapse: collapse;
@@ -247,11 +406,11 @@
             </div>
             <div class="stat-card">
                 <div class="stat-value" id="todaySessions">--</div>
-                <div class="stat-label">当日使用次数</div>
+                <div class="stat-label">当日游戏次数</div>
             </div>
             <div class="stat-card">
                 <div class="stat-value" id="activePlayers">--</div>
-                <div class="stat-label">当日活跃设备</div>
+                <div class="stat-label">当日活跃玩家</div>
             </div>
         </div>
 
@@ -264,21 +423,28 @@
 
         <div class="section">
             <h2>🖥️ 设备实时状态</h2>
-            <div id="deviceStatus" class="loading">加载中...</div>
+            <div style="margin-bottom: 15px;">
+                <span class="status-indicator playing"></span>使用中
+                <span class="status-indicator online" style="margin-left: 20px;"></span>在线
+                <span class="status-indicator offline" style="margin-left: 20px;"></span>离线
+            </div>
+            <div id="deviceGrid" class="device-grid">
+                <div class="loading">加载设备状态中...</div>
+            </div>
         </div>
         
         <div class="section">
-            <h2>🏆 设备使用时长排行榜</h2>
+            <h2>🏆 玩家排行榜</h2>
             <button class="config-btn" onclick="loadPlayers()">🔄 刷新数据</button>
             <div id="playersLoading" class="loading" style="display: none;">加载中...</div>
             <table id="playersTable" style="display: none; width: 100%; border-collapse: collapse; margin-top: 20px;">
                 <thead>
                     <tr style="background-color: #f8f9fa;">
                         <th style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd;">排名</th>
-                        <th style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd;">设备名称</th>
-                        <th style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd;">总使用时长</th>
-                        <th style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd;">使用次数</th>
-                        <th style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd;">最后使用时间</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd;">玩家名称</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd;">总游戏时长</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd;">游戏次数</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd;">最后游戏时间</th>
                     </tr>
                 </thead>
                 <tbody id="playersBody">
@@ -295,10 +461,23 @@
         </div>
     </div>
 
+    <!-- 确认删除对话框 -->
+    <div id="confirmDialog" class="confirm-dialog">
+        <div class="confirm-content">
+            <h3>确认删除</h3>
+            <p id="confirmMessage">确定要删除这个项目吗？此操作不可撤销。</p>
+            <div class="confirm-buttons">
+                <button class="btn-confirm" onclick="confirmDelete()">确认删除</button>
+                <button class="btn-cancel" onclick="cancelDelete()">取消</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // 自动配置 API 地址
         const API_BASE = 'https://web-production-fb0f.up.railway.app/api';
         let usageChart = null;
+        let deleteCallback = null;
 
         // 页面加载时自动加载数据
         document.addEventListener('DOMContentLoaded', function () {
@@ -468,41 +647,57 @@
 
         async function loadDeviceStatus() {
             try {
+                console.log('Loading device status...');
                 const response = await fetch(`${API_BASE}/device-status`);
+                console.log('Device status response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const result = await response.json();
-
+                console.log('Device status result:', result);
+                
                 if (result.success) {
-                    const deviceStatusDiv = document.getElementById('deviceStatus');
+                    const deviceGrid = document.getElementById('deviceGrid');
                     const devices = result.data.devices;
-
+                    
                     if (devices.length === 0) {
-                        deviceStatusDiv.innerHTML = '<div class="loading">暂无设备数据</div>';
+                        deviceGrid.innerHTML = '<div class="loading">暂无设备数据</div>';
                         return;
                     }
-
-                    let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">';
-
+                    
+                    deviceGrid.innerHTML = '';
+                    
                     devices.forEach(device => {
+                        const deviceCard = document.createElement('div');
+                        deviceCard.className = `device-card ${device.status}`;
+                        
                         const statusText = {
-                            'playing': '🎮 使用中',
-                            'online': '🟢 在线',
-                            'offline': '🔴 离线'
+                            'playing': '使用中',
+                            'online': '在线',
+                            'offline': '离线'
                         };
-
-                        html += `
-                            <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid ${device.status === 'playing' ? '#007bff' : device.status === 'online' ? '#28a745' : '#dc3545'};">
-                                <div style="font-weight: bold; margin-bottom: 5px;">${device.player_name}</div>
-                                <div style="color: ${device.status === 'playing' ? '#007bff' : device.status === 'online' ? '#28a745' : '#dc3545'};">${statusText[device.status]}</div>
+                        
+                        deviceCard.innerHTML = `
+                            <div class="device-name">${device.player_name}</div>
+                            <div class="device-status ${device.status}">${statusText[device.status]}</div>
+                            <div style="font-size: 0.8em; color: #666; margin-top: 5px;">
+                                ${device.last_activity ? '最后活动: ' + formatDateTime(device.last_activity) : '无活动记录'}
+                            </div>
+                            <div class="device-actions">
+                                <button class="delete-btn" onclick="showDeleteConfirm('device', '${device.player_id}', '${device.player_name}')">
+                                    🗑️ 删除设备
+                                </button>
                             </div>
                         `;
+                        
+                        deviceGrid.appendChild(deviceCard);
                     });
-
-                    html += '</div>';
-                    deviceStatusDiv.innerHTML = html;
                 }
             } catch (error) {
                 console.error('加载设备状态失败:', error);
-                document.getElementById('deviceStatus').innerHTML = '<div class="error">加载设备状态失败</div>';
+                document.getElementById('deviceGrid').innerHTML = '<div class="loading">加载失败</div>';
             }
         }
 
@@ -555,10 +750,88 @@
 
         // 每30秒自动刷新数据
         setInterval(() => {
-            if (API_BASE) {
-                loadData();
-            }
+            loadData();
         }, 30000);
+        
+        function showDeleteConfirm(type, id, name) {
+            const dialog = document.getElementById('confirmDialog');
+            const message = document.getElementById('confirmMessage');
+            
+            if (type === 'device') {
+                message.textContent = `确定要删除设备 "${name}" 及其所有相关数据吗？此操作不可撤销。`;
+                deleteCallback = () => deleteDevice(id, name);
+            } else if (type === 'session') {
+                message.textContent = `确定要删除这条会话记录吗？此操作不可撤销。`;
+                deleteCallback = () => deleteSession(id);
+            }
+            
+            dialog.style.display = 'flex';
+        }
+        
+        function cancelDelete() {
+            document.getElementById('confirmDialog').style.display = 'none';
+            deleteCallback = null;
+        }
+        
+        function confirmDelete() {
+            if (deleteCallback) {
+                deleteCallback();
+            }
+            cancelDelete();
+        }
+        
+        async function deleteDevice(playerId, playerName) {
+            try {
+                console.log(`删除设备: ${playerId}`);
+                const response = await fetch(`${API_BASE}/device/${encodeURIComponent(playerId)}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`成功删除设备 "${playerName}"`);
+                    // 刷新相关数据
+                    loadData();
+                } else {
+                    alert(`删除失败: ${result.error}`);
+                }
+            } catch (error) {
+                console.error('删除设备失败:', error);
+                alert(`删除设备失败: ${error.message}`);
+            }
+        }
+        
+        async function deleteSession(sessionId) {
+            try {
+                console.log(`删除会话: ${sessionId}`);
+                const response = await fetch(`${API_BASE}/session/${sessionId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('成功删除会话记录');
+                    // 刷新相关数据
+                    loadDailySummary();
+                    loadStats();
+                } else {
+                    alert(`删除失败: ${result.error}`);
+                }
+            } catch (error) {
+                console.error('删除会话失败:', error);
+                alert(`删除会话失败: ${error.message}`);
+            }
+        }
     </script>
 </body>
 
