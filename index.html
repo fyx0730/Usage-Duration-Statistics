@@ -433,43 +433,49 @@
 
         <div class="section">
             <h2>📊 使用时长趋势</h2>
-            
+
             <!-- 日期选择控件 -->
-            <div class="chart-controls" style="margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center;">
+            <div class="chart-controls"
+                style="margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center;">
                 <div class="control-group">
                     <label>时间范围：</label>
-                    <select id="chartPeriod" onchange="updateChartPeriod()" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <select id="chartPeriod" onchange="updateChartPeriod()"
+                        style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                         <option value="7">最近7天</option>
                         <option value="14">最近14天</option>
                         <option value="30">最近30天</option>
                         <option value="custom">自定义范围</option>
                     </select>
                 </div>
-                
+
                 <div id="customDateRange" class="control-group" style="display: none;">
                     <label>开始日期：</label>
-                    <input type="date" id="startDate" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-right: 10px;" />
+                    <input type="date" id="startDate"
+                        style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-right: 10px;" />
                     <label>结束日期：</label>
-                    <input type="date" id="endDate" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-right: 10px;" />
-                    <button onclick="loadChart()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                    <input type="date" id="endDate"
+                        style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-right: 10px;" />
+                    <button onclick="loadChart()"
+                        style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
                         更新图表
                     </button>
                 </div>
-                
+
                 <div class="control-group">
-                    <button onclick="loadChart()" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                    <button onclick="loadChart()"
+                        style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
                         🔄 刷新
                     </button>
                 </div>
             </div>
-            
+
             <!-- 时间段统计摘要 -->
             <div id="periodSummary" class="stats-grid" style="margin-bottom: 20px; display: none;">
                 <div class="stat-card">
                     <div class="stat-value" id="periodTotalHours">--</div>
                     <div class="stat-label">总使用时长 (小时)</div>
                 </div>
-              <div class="stat-card">
+                <div class="stat-card">
                     <div class="stat-value" id="periodTotalSessions">--</div>
                     <div class="stat-label">总游戏次数</div>
                 </div>
@@ -482,7 +488,7 @@
                     <div class="stat-label">统计天数</div>
                 </div>
             </div>
-            
+
             <div class="chart-container">
                 <canvas id="usageChart"></canvas>
             </div>
@@ -559,7 +565,7 @@
             loadData();
             initEventSource();
         });
-        
+
         function initializeDateControls() {
             // 设置默认的结束日期为今天
             const today = new Date();
@@ -567,7 +573,7 @@
             if (endDateInput) {
                 endDateInput.value = today.toISOString().split('T')[0];
             }
-            
+
             // 设置默认的开始日期为7天前
             const startDate = new Date();
             startDate.setDate(today.getDate() - 6);
@@ -903,15 +909,15 @@
         async function loadChart() {
             try {
                 console.log('Loading chart data...');
-                
+
                 // 构建 API URL
                 let url = `${API_BASE}/daily-chart`;
                 const chartPeriod = document.getElementById('chartPeriod').value;
-                
+
                 if (chartPeriod === 'custom') {
                     const startDate = document.getElementById('startDate').value;
                     const endDate = document.getElementById('endDate').value;
-                    
+
                     if (startDate && endDate) {
                         url += `?start_date=${startDate}&end_date=${endDate}`;
                     } else {
@@ -921,21 +927,21 @@
                 } else {
                     url += `?days=${chartPeriod}`;
                 }
-                
+
                 const response = await fetch(url);
                 console.log('Chart response status:', response.status);
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                
+
                 const result = await response.json();
                 console.log('Chart result:', result);
-                
+
                 if (result.success) {
                     const chartData = result.data.daily_data;
                     const summary = result.data.period_summary;
-                    
+
                     // 更新时间段统计摘要
                     if (summary) {
                         document.getElementById('periodTotalHours').textContent = summary.total_time_hours || 0;
@@ -944,14 +950,14 @@
                         document.getElementById('periodDays').textContent = summary.total_days || 0;
                         document.getElementById('periodSummary').style.display = 'grid';
                     }
-                    
+
                     const ctx = document.getElementById('usageChart').getContext('2d');
-                    
+
                     // 销毁现有图表
                     if (usageChart) {
                         usageChart.destroy();
                     }
-                    
+
                     // 动态生成图表标题
                     let chartTitle = '使用统计';
                     if (summary) {
@@ -959,7 +965,7 @@
                         const endDate = new Date(summary.end_date);
                         chartTitle = `使用统计 (${startDate.toLocaleDateString('zh-CN')} - ${endDate.toLocaleDateString('zh-CN')})`;
                     }
-                    
+
                     usageChart = new Chart(ctx, {
                         type: 'line',
                         data: {
@@ -1026,18 +1032,18 @@
                 console.error('加载图表数据失败:', error);
             }
         }
-        
+
         function updateChartPeriod() {
             const chartPeriod = document.getElementById('chartPeriod').value;
             const customDateRange = document.getElementById('customDateRange');
-            
+
             if (chartPeriod === 'custom') {
                 customDateRange.style.display = 'flex';
                 // 设置默认的自定义日期范围（最近7天）
                 const endDate = new Date();
                 const startDate = new Date();
                 startDate.setDate(endDate.getDate() - 6);
-                
+
                 document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
                 document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
             } else {

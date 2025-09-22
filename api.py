@@ -408,20 +408,36 @@ def get_daily_summary():
             for session in day_sessions:
                 device_id = session.player_id
                 if device_id not in active_devices:
+                    # 计算初始的最后活动时间
+                    initial_last_activity = session.start_time
+                    if session.end_time:
+                        initial_last_activity = max(session.start_time, session.end_time)
+                    
                     active_devices[device_id] = {
                         'player_name': session.player_name,
                         'sessions': 0,
                         'total_time': 0,
-                        'last_activity': session.start_time
+                        'last_activity': initial_last_activity
                     }
                 
                 active_devices[device_id]['sessions'] += 1
                 if session.duration_seconds:
                     active_devices[device_id]['total_time'] += session.duration_seconds
                 
-                # 更新最后活动时间
-                if session.start_time > active_devices[device_id]['last_activity']:
-                    active_devices[device_id]['last_activity'] = session.start_time
+                # 更新最后活动时间（考虑开始时间和结束时间）
+                session_last_activity = session.start_time
+                if session.end_time:
+                    session_last_activity = max(session.start_time, session.end_time)
+                
+                if session_last_activity > active_devices[device_id]['last_activity']:
+                    active_devices[device_id]['last_activity'] = session_last_activity
+            
+            # 格式化设备数据中的时间
+            formatted_devices = []
+            for device_data in active_devices.values():
+                formatted_device = device_data.copy()
+                formatted_device['last_activity'] = format_datetime_for_frontend(device_data['last_activity'])
+                formatted_devices.append(formatted_device)
             
             daily_summary.append({
                 'date': current_date.isoformat(),
@@ -431,7 +447,7 @@ def get_daily_summary():
                 'active_sessions': len(active_sessions),
                 'total_sessions': len(day_sessions),
                 'active_devices_count': len(active_devices),
-                'devices': list(active_devices.values())
+                'devices': formatted_devices
             })
         
         # 按日期倒序排列（最新的在前面）
