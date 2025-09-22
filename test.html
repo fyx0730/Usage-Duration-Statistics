@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API 测试页面</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>API 连接测试</h1>
+    
+    <button onclick="testStats()">测试统计 API</button>
+    <button onclick="testDevices()">测试设备状态 API</button>
+    <button onclick="testChart()">测试图表 API</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:5001/api';
+        
+        function addResult(title, data) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = 'result';
+            div.innerHTML = `<h3>${title}</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            results.appendChild(div);
+        }
+        
+        async function testStats() {
+            try {
+                console.log('测试统计 API...');
+                const response = await fetch(`${API_BASE}/stats`);
+                console.log('Response status:', response.status);
+                const data = await response.json();
+                console.log('Response data:', data);
+                addResult('统计 API 结果', data);
+            } catch (error) {
+                console.error('统计 API 错误:', error);
+                addResult('统计 API 错误', { error: error.message });
+            }
+        }
+        
+        async function testDevices() {
+            try {
+                console.log('测试设备状态 API...');
+                const response = await fetch(`${API_BASE}/device-status`);
+                console.log('Response status:', response.status);
+                const data = await response.json();
+                console.log('Response data:', data);
+                addResult('设备状态 API 结果', data);
+            } catch (error) {
+                console.error('设备状态 API 错误:', error);
+                addResult('设备状态 API 错误', { error: error.message });
+            }
+        }
+        
+        async function testChart() {
+            try {
+                console.log('测试图表 API...');
+                const response = await fetch(`${API_BASE}/daily-chart?days=7`);
+                console.log('Response status:', response.status);
+                const data = await response.json();
+                console.log('Response data:', data);
+                addResult('图表 API 结果', data);
+            } catch (error) {
+                console.error('图表 API 错误:', error);
+                addResult('图表 API 错误', { error: error.message });
+            }
+        }
+        
+        // 页面加载时自动测试
+        window.onload = function() {
+            console.log('页面加载完成，开始测试 API...');
+            testStats();
+        };
+    </script>
+</body>
+</html>
